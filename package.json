@@ -3,10 +3,13 @@
   "version": "0.1.0",
   "description": "Programmatic Steam top-up via cryptocurrency. Official client for steam0.shop.",
   "license": "MIT",
-  "homepage": "https://steam0.shop",
+  "homepage": "https://github.com/fomeanator/steam0#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/steam0shop/sdk-js.git"
+    "url": "git+https://github.com/fomeanator/steam0.git"
+  },
+  "bugs": {
+    "url": "https://github.com/fomeanator/steam0/issues"
   },
   "keywords": [
     "steam",

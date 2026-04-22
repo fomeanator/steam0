@@ -2,7 +2,7 @@
 
 This package lives in the main monorepo (`sdk/` directory) but is meant to be
 published to npm under `@steam0/sdk` and mirrored to a public GitHub repo
-`steam0shop/sdk-js`.
+[`fomeanator/steam0`](https://github.com/fomeanator/steam0).
 
 ## One-time setup
 
@@ -13,10 +13,11 @@ npm login                       # use a steam0 npm account
 npm org create steam0           # creates the @steam0 scope (or skip if it exists)
 ```
 
-### 2. Create the GitHub repo
+### 2. The GitHub repo
 
-Create `steam0shop/sdk-js` (public, MIT). No content yet — we'll push from a
-worktree of this directory.
+[`github.com/fomeanator/steam0`](https://github.com/fomeanator/steam0) — public, MIT.
+Already created. The mirror command below pushes only the `sdk/` directory
+content (no monorepo history leak).
 
 ## Push the SDK to its own repo
 
@@ -27,12 +28,13 @@ git history:
 ```bash
 # from the monorepo root
 git subtree split --prefix=sdk -b sdk-only
-git push git@github.com:steam0shop/sdk-js.git sdk-only:main
+git push https://github.com/fomeanator/steam0.git sdk-only:main --force
 git branch -D sdk-only
 ```
 
-Subsequent updates: same command. Subtree merges cleanly because `sdk/` is
-the only path under the prefix.
+`--force` only on the first push (the GitHub repo starts empty / with a
+README that conflicts). After that drop `--force`. Subtree merges cleanly
+because `sdk/` is the only path under the prefix.
 
 ## Publishing a release
 
