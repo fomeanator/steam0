@@ -1,7 +1,7 @@
 {
   "name": "steam0-sdk",
-  "version": "0.2.0",
-  "description": "Programmatic Steam top-up via cryptocurrency. Official client for steam0.shop. No auth needed.",
+  "version": "0.3.0",
+  "description": "Top up Steam balance with crypto (USDT, BTC, TON, ETH, LTC) from code or CLI. No auth, no KYC. Official steam0.shop client for AI agents, Telegram bots, Discord bots, and any Node.js / TypeScript script.",
   "license": "MIT",
   "homepage": "https://github.com/fomeanator/steam0#readme",
   "repository": {
@@ -13,15 +13,40 @@
   },
   "keywords": [
     "steam",
+    "steam-wallet",
+    "steam-balance",
+    "steam-topup",
+    "steam-top-up",
+    "steam-pay",
     "topup",
+    "top-up",
     "crypto",
+    "cryptocurrency",
     "usdt",
+    "tether",
     "bitcoin",
+    "btc",
     "ton",
+    "toncoin",
+    "ethereum",
+    "eth",
+    "litecoin",
+    "ltc",
     "agent",
-    "ai",
+    "ai-agent",
+    "llm",
+    "claude",
+    "gpt",
+    "chatgpt",
+    "mcp",
+    "telegram-bot",
+    "discord-bot",
     "api",
-    "sdk"
+    "sdk",
+    "cli",
+    "no-kyc",
+    "popolnenie-steam",
+    "пополнение-steam"
   ],
   "type": "module",
   "main": "./dist/index.js",
@@ -34,7 +59,8 @@
     }
   },
   "bin": {
-    "steam0": "./dist/cli.js"
+    "steam0": "./dist/cli.js",
+    "steam0-sdk": "./dist/cli.js"
   },
   "files": [
     "dist",

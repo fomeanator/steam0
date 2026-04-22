@@ -1,24 +1,61 @@
 # steam0-sdk
 
-Programmatic Steam balance top-up via cryptocurrency. Official Node.js / TypeScript client for [steam0.shop](https://steam0.shop) — 0% markup, USDT / BTC / TON / ETH / LTC.
+[![npm](https://img.shields.io/npm/v/steam0-sdk.svg)](https://www.npmjs.com/package/steam0-sdk)
+[![downloads](https://img.shields.io/npm/dm/steam0-sdk.svg)](https://www.npmjs.com/package/steam0-sdk)
+[![license](https://img.shields.io/npm/l/steam0-sdk.svg)](LICENSE)
+
+**Top up a Steam balance with cryptocurrency from code or CLI. No auth, no API key, no KYC.** Official client for [steam0.shop](https://steam0.shop) — 0% markup. Pay in USDT (TRC-20 / ERC-20), Bitcoin (Lightning / Mainnet), TON, ETH, or LTC.
 
 ```bash
 npm install steam0-sdk
 ```
 
-## Why
-
-You're a bot, an LLM agent, or a side-project that needs to top up a Steam account programmatically. Three lines, no auth:
-
 ```ts
 import { Steam0Client } from 'steam0-sdk';
 
-const s0 = new Steam0Client();
-const order = await s0.createOrder({ steamLogin: 'iliyafominator', amountUsd: 25 });
-console.log('Pay here:', order.payUrl);
+const order = await new Steam0Client().createOrder({
+  steamLogin: 'iliyafominator',
+  amountUsd: 25,
+});
+console.log('User pays here:', order.payUrl);
 ```
 
-User pays the crypto on the returned `payUrl` (Heleket payment page), Steam balance is topped up automatically within minutes.
+That's it. The user opens `payUrl`, pays whatever crypto they want, Steam balance is topped up automatically within 1–5 minutes.
+
+---
+
+## 🤖 For AI agents (Claude, GPT, Cursor, Cline, etc.)
+
+This package is intentionally designed for autonomous use by LLM agents. **No auth required**, simple JSON contract, JSDoc on every method, deterministic order lifecycle.
+
+**Recipe — top up a Steam account from an agent in 3 steps:**
+
+```ts
+// 1. Create the order. Returns immediately.
+const order = await new Steam0Client().createOrder({
+  steamLogin: 'username_from_user',
+  amountUsd: 25,
+});
+
+// 2. Send order.payUrl to the user — they pay whatever crypto they have.
+console.log(`Tell the user to pay here: ${order.payUrl}`);
+
+// 3. (Optional) wait for fulfillment — useful for chatbots that need to confirm.
+const final = await new Steam0Client().waitForOrder(order.id, {
+  onUpdate: (o) => console.log(`status: ${o.status}`),
+});
+console.log(final.status === 'completed' ? 'Done!' : `Issue: ${final.status}`);
+```
+
+**Exhaustive `OrderStatus` values:** `pending` | `paid` | `fulfilling` | `completed` | `failed` | `cancelled` | `expired` | `refund` | `unknown` (terminal: completed/failed/cancelled/expired/refund).
+
+**Validation rules** (server enforces, throws `Steam0ApiError`):
+- `steamLogin` matches `/^[a-zA-Z0-9_]{1,64}$/`
+- `1 ≤ amountUsd ≤ 500_000`
+
+**Need it from a non-Node language?** Use the CLI (`npx steam0-sdk create`) or call the HTTP API directly — see «Without this SDK» below.
+
+---
 
 ## Library usage
 
@@ -57,20 +94,18 @@ const o = await s0.getOrder(orderId);
 const rates = await s0.getRates();
 ```
 
+---
+
 ## CLI
 
-The package ships a `steam0` binary. No JS needed in your stack — shell out from any language.
+The package ships a `steam0` (and `steam0-sdk`) binary. No JS needed in your stack — shell out from any language.
 
 ```bash
-# install globally or use via npx
+# install globally
 npm install -g steam0-sdk
 
 steam0 create --login iliyafominator --amount 25
-# → JSON with id and payUrl
-
 steam0 watch <order-id>
-# → live status updates until terminal state
-
 steam0 status <order-id>
 steam0 rates
 ```
@@ -80,6 +115,60 @@ steam0 rates
 ```bash
 npx steam0-sdk create -l iliyafominator -a 25
 ```
+
+---
+
+## Without this SDK (raw HTTP)
+
+For Python, Go, Rust, shell scripts, etc — just hit the JSON API directly. No auth.
+
+### curl
+
+```bash
+# Create order
+curl -X POST https://steam0.shop/api/agent/orders \
+  -H 'Content-Type: application/json' \
+  -d '{"steam_login":"iliyafominator","amount_usd":25}'
+
+# Check status
+curl https://steam0.shop/api/agent/orders/<ORDER_ID>
+```
+
+### Python
+
+```python
+import requests, time
+
+order = requests.post(
+    'https://steam0.shop/api/agent/orders',
+    json={'steam_login': 'iliyafominator', 'amount_usd': 25},
+).json()
+print('Pay here:', order['pay_url'])
+
+# poll until terminal
+terminal = {'completed', 'cancelled', 'failed', 'expired', 'refund'}
+while True:
+    o = requests.get(f"https://steam0.shop/api/agent/orders/{order['id']}").json()
+    print(o['status'])
+    if o['status'] in terminal:
+        break
+    time.sleep(3)
+```
+
+### Go
+
+```go
+resp, _ := http.Post(
+    "https://steam0.shop/api/agent/orders",
+    "application/json",
+    strings.NewReader(`{"steam_login":"iliyafominator","amount_usd":25}`),
+)
+var order map[string]any
+json.NewDecoder(resp.Body).Decode(&order)
+fmt.Println("Pay here:", order["pay_url"])
+```
+
+---
 
 ## API reference
 
@@ -94,7 +183,7 @@ npx steam0-sdk create -l iliyafominator -a 25
 
 ### `createOrder({ steamLogin, amountUsd, source? }) → Order`
 
-Validates: `steamLogin` is `[a-zA-Z0-9_]{1,64}`, `amountUsd` is `1 ≤ x ≤ 500_000`. Server enforces too — you'll get `Steam0ApiError` on rejection.
+Creates a new top-up order. Returns immediately with `payUrl`. Throws `Steam0ApiError` on validation failure.
 
 ### `getOrder(id) → Order`
 
@@ -102,7 +191,7 @@ Returns the latest known state. `Order.batches` is present for orders that excee
 
 ### `waitForOrder(id, opts) → Order`
 
-Polls until the order reaches a terminal status (`completed`/`cancelled`/`failed`/`expired`/`refund`). Callback `onUpdate` fires on every poll — wire it to a progress bar.
+Polls until the order reaches a terminal status. Callback `onUpdate` fires on every poll — wire it to a progress bar.
 
 ### `getRates() → RatesResponse`
 
@@ -113,8 +202,6 @@ Latest USD prices for supported cryptos.
 Health check.
 
 ## Errors
-
-All API failures throw `Steam0ApiError`:
 
 ```ts
 import { Steam0ApiError } from 'steam0-sdk';
