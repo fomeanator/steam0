@@ -1,28 +1,24 @@
-# @steam0/sdk
+# steam0-sdk
 
 Programmatic Steam balance top-up via cryptocurrency. Official Node.js / TypeScript client for [steam0.shop](https://steam0.shop) — 0% markup, USDT / BTC / TON / ETH / LTC.
 
 ```bash
-npm install @steam0/sdk
+npm install steam0-sdk
 ```
 
 ## Why
 
-You're a bot, an LLM agent, or a side-project that needs to top up a Steam account programmatically. Three lines:
+You're a bot, an LLM agent, or a side-project that needs to top up a Steam account programmatically. Three lines, no auth:
 
 ```ts
-import { Steam0Client } from '@steam0/sdk';
+import { Steam0Client } from 'steam0-sdk';
 
-const s0 = new Steam0Client({ apiKey: process.env.STEAM0_API_KEY! });
+const s0 = new Steam0Client();
 const order = await s0.createOrder({ steamLogin: 'iliyafominator', amountUsd: 25 });
 console.log('Pay here:', order.payUrl);
 ```
 
-User pays the crypto (Heleket payment page), Steam balance is topped up automatically within minutes.
-
-## Getting an API key
-
-DM [@steam0shop](https://t.me/steam0shop) on Telegram with what you're building and you'll get a key.
+User pays the crypto on the returned `payUrl` (Heleket payment page), Steam balance is topped up automatically within minutes.
 
 ## Library usage
 
@@ -32,7 +28,7 @@ DM [@steam0shop](https://t.me/steam0shop) on Telegram with what you're building 
 const order = await s0.createOrder({
   steamLogin: 'gamer123',
   amountUsd: 50,
-  source: 'my-tg-bot', // optional — appears in operator dashboard
+  source: 'my-tg-bot', // optional — appears in the operator dashboard
 });
 
 // order.payUrl points to Heleket where the user picks BTC/USDT/etc and pays
@@ -55,11 +51,10 @@ console.log(final.status); // 'completed' | 'failed' | 'cancelled' | 'expired' |
 const o = await s0.getOrder(orderId);
 ```
 
-### Public crypto rates (no api key needed)
+### Public crypto rates
 
 ```ts
-const { prices } = await s0.getRates();
-// { BTC: 67200, ETH: 3450, USDT: 1, TON: 5.4, LTC: 80, SOL: 175 }
+const rates = await s0.getRates();
 ```
 
 ## CLI
@@ -68,9 +63,7 @@ The package ships a `steam0` binary. No JS needed in your stack — shell out fr
 
 ```bash
 # install globally or use via npx
-npm install -g @steam0/sdk
-
-export STEAM0_API_KEY=sk-...
+npm install -g steam0-sdk
 
 steam0 create --login iliyafominator --amount 25
 # → JSON with id and payUrl
@@ -79,22 +72,21 @@ steam0 watch <order-id>
 # → live status updates until terminal state
 
 steam0 status <order-id>
-steam0 rates  # public, no key
+steam0 rates
 ```
 
 ### Without install
 
 ```bash
-STEAM0_API_KEY=sk-... npx @steam0/sdk create -l iliyafominator -a 25
+npx steam0-sdk create -l iliyafominator -a 25
 ```
 
 ## API reference
 
-### `new Steam0Client(opts)`
+### `new Steam0Client(opts?)`
 
 | option       | type     | required | default                    |
 | ------------ | -------- | -------- | -------------------------- |
-| `apiKey`     | string   | yes      | —                          |
 | `baseUrl`    | string   | no       | `https://steam0.shop`      |
 | `timeoutMs`  | number   | no       | `30000`                    |
 | `source`     | string   | no       | tag attached to all orders |
@@ -112,20 +104,20 @@ Returns the latest known state. `Order.batches` is present for orders that excee
 
 Polls until the order reaches a terminal status (`completed`/`cancelled`/`failed`/`expired`/`refund`). Callback `onUpdate` fires on every poll — wire it to a progress bar.
 
-### `getRates() → { prices: Record<string, number> }`
+### `getRates() → RatesResponse`
 
-Latest USD prices for supported cryptos. No auth required.
+Latest USD prices for supported cryptos.
 
 ### `ping() → boolean`
 
-Health check. No auth.
+Health check.
 
 ## Errors
 
 All API failures throw `Steam0ApiError`:
 
 ```ts
-import { Steam0ApiError } from '@steam0/sdk';
+import { Steam0ApiError } from 'steam0-sdk';
 
 try {
   await s0.createOrder({ steamLogin: 'bad login!', amountUsd: 0.5 });
@@ -135,8 +127,6 @@ try {
   }
 }
 ```
-
-Network timeouts surface as `AbortError` (configurable via `timeoutMs`).
 
 ## Order lifecycle
 
@@ -160,11 +150,8 @@ fulfilling   ← we're sending top-up requests to Giftery
 
 ## Self-hosting / staging
 
-Override `baseUrl`:
-
 ```ts
 const s0 = new Steam0Client({
-  apiKey: '...',
   baseUrl: 'https://staging.steam0.shop',
 });
 ```

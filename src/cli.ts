@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * CLI for @steam0/sdk. Usage:
- *   STEAM0_API_KEY=... npx steam0 create --login iliyafominator --amount 25
- *   STEAM0_API_KEY=... npx steam0 status <order-id>
- *   STEAM0_API_KEY=... npx steam0 watch <order-id>
- *   npx steam0 rates              # public, no key needed
+ * CLI for steam0-sdk. Usage:
+ *   npx steam0-sdk create --login iliyafominator --amount 25
+ *   npx steam0-sdk status <order-id>
+ *   npx steam0-sdk watch <order-id>
+ *   npx steam0-sdk rates
  *
  * Designed to be self-contained — zero npm runtime deps. AI agents can shell
  * out to it from any language without bringing JS into their stack.
@@ -52,12 +52,7 @@ async function main() {
 }
 
 function newClient(): Steam0Client {
-  const apiKey = process.env.STEAM0_API_KEY;
-  if (!apiKey) {
-    throw new Error('STEAM0_API_KEY env var is required (get one from steam0.shop/agents)');
-  }
   return new Steam0Client({
-    apiKey,
     baseUrl: process.env.STEAM0_BASE_URL,
     source: process.env.STEAM0_SOURCE,
   });
@@ -100,8 +95,7 @@ async function runWatch(args: string[]) {
 }
 
 async function runRates() {
-  const client = new Steam0Client({ apiKey: 'public-noop' });
-  const rates = await client.getRates();
+  const rates = await newClient().getRates();
   process.stdout.write(JSON.stringify(rates, null, 2) + '\n');
 }
 
@@ -123,18 +117,17 @@ Usage:
   steam0 watch <order-id>
   steam0 rates
 
-Env:
-  STEAM0_API_KEY     required for create/status/watch (issued at steam0.shop)
-  STEAM0_BASE_URL    optional (defaults to https://steam0.shop)
-  STEAM0_SOURCE      optional default source tag for create
+Env (all optional):
+  STEAM0_BASE_URL    override the API host (defaults to https://steam0.shop)
+  STEAM0_SOURCE      default source tag for create
 
 Examples:
-  STEAM0_API_KEY=... steam0 create -l iliyafominator -a 25
-  STEAM0_API_KEY=... steam0 watch 8c3d1861-48dc-42ee-aeed-90f3f654333a
+  steam0 create -l iliyafominator -a 25
+  steam0 watch 8c3d1861-48dc-42ee-aeed-90f3f654333a
 
 Library usage (Node ≥18):
-  import { Steam0Client } from '@steam0/sdk';
-  const s0 = new Steam0Client({ apiKey: process.env.STEAM0_API_KEY! });
+  import { Steam0Client } from 'steam0-sdk';
+  const s0 = new Steam0Client();
   const order = await s0.createOrder({ steamLogin: 'iliyafominator', amountUsd: 25 });
   console.log(order.payUrl);
 `);

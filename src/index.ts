@@ -13,15 +13,13 @@
 export const DEFAULT_BASE_URL = 'https://steam0.shop';
 
 export interface Steam0ClientOptions {
-  /** API key issued by steam0.shop. Required. */
-  apiKey: string;
   /** Override the API host. Useful for self-hosted or staging deployments. */
   baseUrl?: string;
   /** Per-request timeout in milliseconds. Defaults to 30 000. */
   timeoutMs?: number;
   /**
    * Tag your traffic so the operator sees the source in the Telegram bubble
-   * instead of the generic "agent:<key-fp>". E.g. "telegram-bot:my-app".
+   * instead of the generic "agent". E.g. "telegram-bot:my-app".
    */
   source?: string;
   /** Override fetch (for tests / Node < 18). Defaults to globalThis.fetch. */
@@ -88,15 +86,12 @@ export class Steam0ApiError extends Error {
 }
 
 export class Steam0Client {
-  private readonly apiKey: string;
   private readonly baseUrl: string;
   private readonly timeoutMs: number;
   private readonly source?: string;
   private readonly fetchImpl: typeof fetch;
 
-  constructor(opts: Steam0ClientOptions) {
-    if (!opts.apiKey) throw new Error('Steam0Client: apiKey is required');
-    this.apiKey = opts.apiKey;
+  constructor(opts: Steam0ClientOptions = {}) {
     this.baseUrl = (opts.baseUrl ?? DEFAULT_BASE_URL).replace(/\/$/, '');
     this.timeoutMs = opts.timeoutMs ?? 30_000;
     this.source = opts.source;
@@ -113,13 +108,13 @@ export class Steam0Client {
       amount_usd: input.amountUsd,
       source: input.source ?? this.source,
     };
-    const json = await this.request<Record<string, unknown>>('POST', '/api/agent/orders', body, true);
+    const json = await this.request<Record<string, unknown>>('POST', '/api/agent/orders', body);
     return mapOrder(json);
   }
 
-  /** Fetch current state of an order. Public — works without api key, but using the client keeps base URL consistent. */
+  /** Fetch current state of an order. */
   async getOrder(orderId: string): Promise<Order> {
-    const json = await this.request<Record<string, unknown>>('GET', `/api/agent/orders/${encodeURIComponent(orderId)}`, undefined, true);
+    const json = await this.request<Record<string, unknown>>('GET', `/api/agent/orders/${encodeURIComponent(orderId)}`, undefined);
     return mapOrder(json);
   }
 
@@ -149,15 +144,15 @@ export class Steam0Client {
     }
   }
 
-  /** Public crypto rates. No api key needed. */
+  /** Public crypto rates. */
   async getRates(): Promise<RatesResponse> {
-    return this.request<RatesResponse>('GET', '/api/rates', undefined, false);
+    return this.request<RatesResponse>('GET', '/api/rates', undefined);
   }
 
   /** Public health check. */
   async ping(): Promise<boolean> {
     try {
-      const res = await this.request<{ status: string }>('GET', '/api/health', undefined, false);
+      const res = await this.request<{ status: string }>('GET', '/api/health', undefined);
       return res?.status === 'ok';
     } catch {
       return false;
@@ -166,9 +161,8 @@ export class Steam0Client {
 
   // ---------- low-level ----------
 
-  private async request<T>(method: string, path: string, body: unknown, withAuth: boolean): Promise<T> {
+  private async request<T>(method: string, path: string, body: unknown): Promise<T> {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (withAuth) headers['Authorization'] = `Bearer ${this.apiKey}`;
 
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), this.timeoutMs);

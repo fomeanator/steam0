@@ -1,7 +1,7 @@
 {
-  "name": "@steam0/sdk",
-  "version": "0.1.0",
-  "description": "Programmatic Steam top-up via cryptocurrency. Official client for steam0.shop.",
+  "name": "steam0-sdk",
+  "version": "0.2.0",
+  "description": "Programmatic Steam top-up via cryptocurrency. Official client for steam0.shop. No auth needed.",
   "license": "MIT",
   "homepage": "https://github.com/fomeanator/steam0#readme",
   "repository": {
